@@ -1,0 +1,90 @@
+https://openfeature.dev/docs/tutorials/getting-started/node
+
+flagd : 
+docker run \
+  --rm -it \
+  --name flagd \
+  -p 8013:8013 \
+  -v $(pwd):/etc/flagd \
+  ghcr.io/open-feature/flagd:latest start \
+  --uri file:./etc/flagd/example_flags.flagd.json
+
+openFrature operator:
+kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.12.0/cert-manager.yaml &&
+kubectl wait --for=condition=Available=True deploy --all -n 'cert-manager'
+
+kubectl create namespace open-feature-operator-system &&
+kubectl apply -f https://github.com/open-feature/open-feature-operator/releases/download/v0.2.36/release.yaml
+
+kubectl create ns ffm (We use the namespace ffm for flag related custom resources)
+
+Install ff def as a custom resource
+kubectl apply -n ffm -f - <<EOF
+apiVersion: core.openfeature.dev/v1alpha2
+kind: FeatureFlagConfiguration
+metadata:
+  name: sample-flags
+spec:
+  featureFlagSpec:
+    flags:
+      foo:
+        state: "ENABLED"
+        variants:
+          "bar": "BAR"
+          "baz": "BAZ"
+        defaultVariant: "bar"
+        targeting: {}
+EOF
+
+Install source def as custom resource
+kubectl apply -n ffm -f - <<EOF
+apiVersion: core.openfeature.dev/v1alpha3
+kind: FlagSourceConfiguration
+metadata:
+  name: flag-source-configuration
+spec:
+  sources:
+  - source: ffm/sample-flags
+    provider: kubernetes
+  port: 8080
+EOF
+
+Deploy sample workload
+kubectl create ns workload
+kubectl apply -n workload -f - <<EOF
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-curl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-busybox-curl-app
+  template:
+    metadata:
+      labels:
+        app: my-busybox-curl-app
+      annotations:
+        # here are the annotations for OpenFeature Operator
+        openfeature.dev/enabled: "true"
+        openfeature.dev/flagsourceconfiguration: "ffm/flag-source-configuration"
+    spec:
+      containers:
+        - name: busybox
+          image: yauritux/busybox-curl:latest
+          ports:
+            - containerPort: 80
+          args:
+            - sleep
+            - "30000"
+EOF
+
+
+verify:
+
+kubectl get pods -n workload
+kubectl describe pod -n workload busybox-curl-cf755b75f-zmlb2
+
+kubectl exec  --stdin --tty -n workload busybox-curl-cf755b75f-zmlb2 -- /bin/sh
+and run curl --location 'http://localhost:8080/schema.v1.Service/ResolveString' --header 'Content-Type: application/json' --data '{ "flagKey":"foo"}'

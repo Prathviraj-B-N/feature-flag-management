@@ -1,0 +1,36 @@
+{
+  "flags": {
+    "comp1": {
+      "state": "DISABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "comp2": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "off"
+    },
+    "comp3": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on"
+    },
+    "welcome-message": {
+      "state": "ENABLED",
+      "variants": {
+        "on": true,
+        "off": false
+      },
+      "defaultVariant": "on"
+    }
+  }
+}
