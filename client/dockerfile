@@ -1,0 +1,14 @@
+FROM node
+
+WORKDIR /app
+
+COPY package.json .
+RUN npm i
+
+COPY . .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev"]
+
+# docker run -d --rm -p 5173:5173 --name [name of the container] [your docker image name]
